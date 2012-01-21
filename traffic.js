@@ -132,10 +132,6 @@ Traffic.EndNode = Traffic.Node.extend({
     }
 });
 
-Traffic.PriorityNode = Traffic.Node.extend({
-    
-});
-
 Traffic.Path = Traffic.extend({
     
     startNode: null, // node that starts this path
