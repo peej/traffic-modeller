@@ -27,9 +27,9 @@ Traffic.run = function (canvas, startNodes) {
         $.each(startNodes, function () {
             Traffic.render(canvas, this);
             if (Traffic.phase % this.frequency == 0) {
-                this.addVehicle({
+                this.transferVehicle(Traffic.Vehicle.create({
                     name: "from " + this.name
-                }); // increment start node
+                })); // increment start node
             }
         });
         $.each(startNodes, function () {
@@ -51,7 +51,7 @@ Traffic.render = function (canvas, node) {
                 if (this.vehicles.length > 0) {
                     var veh = this.vehicles[0];
                     if (veh.exitPhase <= Traffic.phase) {
-                        if (this.endNode.addVehicle(veh, this)) {
+                        if (this.endNode.transferVehicle(veh, this)) {
                             this.removeVehicle();
                         }
                     }
@@ -91,7 +91,7 @@ Traffic.Node = Traffic.extend({
         this.paths.push(path);
     },
 
-    addVehicle: function (veh, fromPath) { // add a vehicle to a path from this node
+    transferVehicle: function (veh, fromPath) { // transfer a vehicle to a path from this node
         veh = veh || Traffic.Vehicle.create();
         fromPath = fromPath || {};
         if (
@@ -126,10 +126,14 @@ Traffic.StartNode = Traffic.Node.extend({
 });
 
 Traffic.EndNode = Traffic.Node.extend({
-    addVehicle: function (veh, fromPath) { // exit nodes always have room
+    transferVehicle: function (veh, fromPath) { // exit nodes always have room
         console.log("Vehicle '" + veh.name + "' exits from node '" + this.name + "'");
         return true;
     }
+});
+
+Traffic.PriorityNode = Traffic.Node.extend({
+    
 });
 
 Traffic.Path = Traffic.extend({
