@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+
+    <head>
+        <title>Diagram test</title>
+    </head>
+
+    <body>
+        <canvas width="500" height="500"></canvas>
+        
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+        <script src="traffic.js"></script>
+        <script>
+
+var nodes = [];
+var paths = [];
+
+$(function () {
+    
+    nodes[1] = Traffic.StartNode.create({ x: 10, y: 10, frequency: 4, name: "Left start" });
+    nodes[5] = Traffic.StartNode.create({ x: 90, y: 10, frequency: 10, name: "Right start" });
+    nodes[2] = Traffic.Node.create({ x: 10, y: 90, name: "Busy node" });
+    nodes[6] = Traffic.Node.create({ x: 90, y: 160, name: "Merge node" });
+    nodes[3] = Traffic.EndNode.create({ x: 10, y: 220, name: "Left exit" });
+    nodes[4] = Traffic.EndNode.create({ x: 90, y: 220, name: "Right exit"  });
+    nodes[7] = Traffic.StartNode.create({ x: 180, y: 10, frequency: 2, name: "Busy start" });
+
+    paths[1] = Traffic.Path.create(nodes[1], nodes[2]);
+    paths[2] = Traffic.Path.create(nodes[2], nodes[3]);
+    paths[3] = Traffic.Path.create(nodes[2], nodes[6]);
+    paths[5] = Traffic.Path.create(nodes[6], nodes[4]);
+    paths[4] = Traffic.Path.create(nodes[5], nodes[2]);
+    paths[6] = Traffic.Path.create(nodes[7], nodes[6]);
+    
+    Traffic.run($("canvas"), [
+        nodes[1], nodes[5], nodes[7]
+    ]);
+});
+
+        </script>
+
+    </body>
+
+</html>
