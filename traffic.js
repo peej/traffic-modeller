@@ -166,6 +166,16 @@ Traffic.CrossingNode = Traffic.Node.extend({ // direct crossing from corrispondi
 
 });
 
+Traffic.ControlledNode = Traffic.Node.extend({
+    
+    create: function (props) {
+        var G = this.extend(props);
+        G.paths = [];
+        G.entryPaths = [];
+        return G;
+    },
+});
+
 Traffic.Path = Traffic.extend({
     
     startNode: null, // node that starts this path
@@ -200,7 +210,7 @@ Traffic.Path = Traffic.extend({
         //return 2; // should be based on the length of the path
         var x = Math.abs(this.startNode.x - this.endNode.x);
         var y = Math.abs(this.startNode.y - this.endNode.y);
-        var h = Math.ceil(Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2)) / Traffic.vehicleLengthInPixels);
+        var h = Math.round(Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2)) / Traffic.vehicleLengthInPixels);
         this.capacity = function () {
             return h;
         };
@@ -216,6 +226,8 @@ Traffic.Path = Traffic.extend({
             veh.exitPhase = Traffic.phase + this.capacity();
             this.vehicles.push(veh);
             return true;
+        } else if (this.capacity() == 0) { // short node, so push straight through to next path if possible
+            return this.endNode.transferVehicle(veh, this);
         } else {
             return false;
         }
