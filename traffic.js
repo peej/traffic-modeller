@@ -8,6 +8,7 @@ var Traffic = {
         function F() {};
         F.prototype = this;
         var G = new F();
+        G.parent = this;
         for (member in obj) {
             G[member] = obj[member];
         }
@@ -63,6 +64,7 @@ Traffic.render = function (canvas, node) {
 
 Traffic.Node = Traffic.extend({
     
+    baseNode: true,
     x: null, y: null, // position of this node
     color: "#0f0",
     busy: false,
@@ -136,10 +138,14 @@ Traffic.Node = Traffic.extend({
 });
 
 Traffic.StartNode = Traffic.Node.extend({
+    startNode: true,
     frequency: 1,
 });
 
 Traffic.EndNode = Traffic.Node.extend({
+
+    endNode: true,
+
     transferVehicle: function (veh, fromPath) { // exit nodes always have room
         console.log("Vehicle '" + veh.name + "' exits from node '" + this.name + "'");
         return true;
@@ -147,6 +153,8 @@ Traffic.EndNode = Traffic.Node.extend({
 });
 
 Traffic.CrossingNode = Traffic.Node.extend({ // direct crossing from corrisponding entry and exit paths
+
+    crossingNode: true,
 
     create: function (props) {
         var G = this.extend(props);
@@ -168,12 +176,29 @@ Traffic.CrossingNode = Traffic.Node.extend({ // direct crossing from corrispondi
 
 Traffic.ControlledNode = Traffic.Node.extend({
     
+    controlledNode: true,
+    green: 0, // which entry path has the green light
+
     create: function (props) {
         var G = this.extend(props);
         G.paths = [];
         G.entryPaths = [];
         return G;
     },
+
+    hasPath: function (path) {
+        this.entryPaths.push(path);
+    },
+
+    transferAllowed: function (veh, fromPath) {
+        if (this.entryPaths.indexOf(fromPath) == this.green) {
+            this.parent.parent.transferAllowed.call(this, veh, fromPath);
+        } else {
+            console.log("Vehicle '" + veh.name + "' stopped at red light at node '" + this.name + "'");
+            return false;
+        }
+    }
+
 });
 
 Traffic.Path = Traffic.extend({
@@ -204,6 +229,12 @@ Traffic.Path = Traffic.extend({
         canvas.moveTo(this.startNode.x, this.startNode.y);
         canvas.lineTo(this.endNode.x, this.endNode.y);
         canvas.stroke();
+        /*
+        var path = this;
+        $.each(this.vehicles, function () {
+            this.render(canvas, path);
+        });
+        */
     },
 
     capacity: function () { // the maximum number of vehicle this path can hold
@@ -245,5 +276,27 @@ Traffic.Path = Traffic.extend({
 });
 
 Traffic.Vehicle = Traffic.extend({
-    exitPhase: 0
+
+    exitPhase: 0,
+    color: "#333",
+
+    render: function (canvas, path) {
+
+        var x = path.endNode.x - path.startNode.x;
+        var y = path.endNode.y - path.startNode.y;
+
+        var pos = (this.exitPhase - Traffic.phase + 1);
+        
+        x = path.startNode.x + (x / pos);
+        y = path.startNode.y + (y / pos);
+
+        canvas.beginPath();
+        canvas.strokeStyle = this.color;
+        canvas.fillStyle = this.color;
+        canvas.lineWidth = 1;
+        canvas.arc(x, y, 10, 0, 360, false);
+        canvas.fill();
+        canvas.stroke();
+    }
+
 });
