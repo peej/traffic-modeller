@@ -87,9 +87,15 @@ Traffic.Node = Traffic.extend({
         canvas.stroke();
     },
 
-    addPath: function (path) {
-        this.paths.push(path);
+    addPath: function (path, priority) {
+        if (typeof priority == "number") {
+            this.paths.splice(priority, 0, path);
+        } else {
+            this.paths.push(path);
+        }
     },
+
+    hasPath: function (path) {},
 
     transferVehicle: function (veh, fromPath) { // transfer a vehicle to a path from this node
         veh = veh || Traffic.Vehicle.create();
@@ -101,13 +107,21 @@ Traffic.Node = Traffic.extend({
             console.log("Vehicle '" + veh.name + "' waiting at '" + this.name + "'");
             this.busy = true;
             fromPath.color = "#f00";
-            return false;
+            return this.transferBlocked(veh, fromPath);
         } else {
             this.busy = true;
             fromPath.color = "#00f";
-            var pathNum = Math.floor(Math.random() * this.paths.length);
-            return this.paths[pathNum].addVehicle(veh);
+            return this.transferAllowed(veh, fromPath);
         }
+    },
+
+    transferBlocked: function (veh, fromPath) {
+        return false;
+    },
+
+    transferAllowed: function (veh, fromPath) {
+        var pathNum = Math.floor(Math.random() * this.paths.length);
+        return this.paths[pathNum].addVehicle(veh);
     },
 
     reset: function () {
@@ -132,6 +146,26 @@ Traffic.EndNode = Traffic.Node.extend({
     }
 });
 
+Traffic.CrossingNode = Traffic.Node.extend({ // direct crossing from corrisponding entry and exit paths
+
+    create: function (props) {
+        var G = this.extend(props);
+        G.paths = [];
+        G.entryPaths = [];
+        return G;
+    },
+    
+    hasPath: function (path) {
+        this.entryPaths.push(path);
+    },
+
+    transferAllowed: function (veh, fromPath) {
+        var pathNum = this.entryPaths.indexOf(fromPath);
+        return this.paths[pathNum].addVehicle(veh);
+    }
+
+});
+
 Traffic.Path = Traffic.extend({
     
     startNode: null, // node that starts this path
@@ -144,6 +178,7 @@ Traffic.Path = Traffic.extend({
             endNode: endNode
         });
         startNode.addPath(G);
+        endNode.hasPath(G);
         G.vehicles = [];
         return G;
     },
