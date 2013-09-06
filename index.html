@@ -12,36 +12,58 @@
         <script src="traffic.js"></script>
         <script>
 
-var nodes = [];
-var paths = [];
+/*
+var start = Traffic.StartNode.create({ x: 0, y: 0, frequency: 4, name: "Start" });
+var middle = Traffic.Node.create({ x: 50, y: 50, name: "Middle" });
+var end = Traffic.EndNode.create({ x: 50, y: 100, name: "End" });
+
+var startToMiddle = Traffic.Path.create(start, middle);
+var middleToEnd = Traffic.Path.create(middle, end);
 
 $(function () {
-    
-    nodes[1] = Traffic.StartNode.create({ x: 10, y: 10, frequency: 4, name: "Left start" });
-    nodes[5] = Traffic.StartNode.create({ x: 90, y: 10, frequency: 10, name: "Right start" });
-    nodes[2] = Traffic.Node.create({ x: 10, y: 90, name: "Busy node" });
-    nodes[6] = Traffic.CrossingNode.create({ x: 90, y: 160, name: "Crossing node" });
-    nodes[3] = Traffic.EndNode.create({ x: 10, y: 220, name: "Left exit" });
-    nodes[9] = Traffic.Node.create({ x: 90, y: 200, name: "Middle short" });
-    nodes[10] = Traffic.Node.create({ x: 90, y: 210, name: "Middle short 2" });
-    nodes[4] = Traffic.EndNode.create({ x: 90, y: 300, name: "Middle exit" });
-    nodes[7] = Traffic.StartNode.create({ x: 180, y: 10, frequency: 2, name: "Busy start" });
-    nodes[8] = Traffic.EndNode.create({ x: 180, y: 220, name: "Right exit" });
-
-    paths[1] = Traffic.Path.create(nodes[1], nodes[2]);
-    paths[2] = Traffic.Path.create(nodes[2], nodes[3]);
-    paths[4] = Traffic.Path.create(nodes[5], nodes[2]);
-    paths[3] = Traffic.Path.create(nodes[2], nodes[6]);
-    paths[6] = Traffic.Path.create(nodes[7], nodes[6]);
-    paths[5] = Traffic.Path.create(nodes[6], nodes[8]);
-    paths[7] = Traffic.Path.create(nodes[6], nodes[9]);
-    paths[8] = Traffic.Path.create(nodes[9], nodes[10]);
-    paths[9] = Traffic.Path.create(nodes[10], nodes[4]);
-    
     Traffic.run($("canvas"), [
-        nodes[1], nodes[5], nodes[7]
+        start
     ]);
 });
+//*/
+
+/*
+var start1 = Traffic.StartNode.create({ x: 0, y: 0, frequency: 4, name: "Left start" });
+var start2 = Traffic.StartNode.create({ x: 100, y: 0, frequency: 10, name: "Right start" });
+var crossing = Traffic.CrossingNode.create({ x: 50, y: 50, name: "Crossing node" });
+var end1 = Traffic.EndNode.create({ x: 100, y: 100, name: "Right exit" });
+var end2 = Traffic.EndNode.create({ x: 0, y: 100, name: "Left exit" });
+
+var start1toCrossing = Traffic.Path.create({ start: start1, end: crossing, name: "start1toCrossing" });
+var start2toCrossing = Traffic.Path.create({ start: start2, end: crossing, name: "start2toCrossing" });
+var crossingToEnd1 = Traffic.Path.create({ start: crossing, end: end1, name: "crossingToEnd1" });
+var crossingToEnd2 = Traffic.Path.create({ start: crossing, end: end2, name: "crossingToEnd2" });
+
+$(function () {
+    Traffic.run($("canvas"), [
+        start1, start2
+    ]);
+});
+//*/
+
+//*
+var start1 = Traffic.StartNode.create({ x: 0, y: 0, frequency: 4, name: "Left start" });
+var start2 = Traffic.StartNode.create({ x: 100, y: 0, frequency: 10, name: "Right start" });
+var crossing = Traffic.ControlledNode.create({ x: 50, y: 50, name: "Controlled node" });
+var end1 = Traffic.EndNode.create({ x: 100, y: 100, name: "Right exit" });
+var end2 = Traffic.EndNode.create({ x: 0, y: 100, name: "Left exit" });
+
+var start1toCrossing = Traffic.Path.create({ start: start1, end: crossing, name: "start1toCrossing" });
+var start2toCrossing = Traffic.Path.create({ start: start2, end: crossing, name: "start2toCrossing" });
+var crossingToEnd1 = Traffic.Path.create({ start: crossing, end: end1, name: "crossingToEnd1" });
+var crossingToEnd2 = Traffic.Path.create({ start: crossing, end: end2, name: "crossingToEnd2" });
+
+$(function () {
+    Traffic.run($("canvas"), [
+        start1, start2
+    ]);
+});
+//*/
 
         </script>
 
