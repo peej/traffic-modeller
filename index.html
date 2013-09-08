@@ -47,21 +47,25 @@ $(function () {
 //*/
 
 //*
-var start1 = Traffic.StartNode.create({ x: 0, y: 0, frequency: 4, name: "Left start" });
-var start2 = Traffic.StartNode.create({ x: 100, y: 0, frequency: 10, name: "Right start" });
-var crossing = Traffic.ControlledNode.create({ x: 50, y: 50, name: "Controlled node" });
-var end1 = Traffic.EndNode.create({ x: 100, y: 100, name: "Right exit" });
-var end2 = Traffic.EndNode.create({ x: 0, y: 100, name: "Left exit" });
+var controller = Traffic.Controller.create({
+    stages: 2
+});
 
-var start1toCrossing = Traffic.Path.create({ start: start1, end: crossing, name: "start1toCrossing" });
-var start2toCrossing = Traffic.Path.create({ start: start2, end: crossing, name: "start2toCrossing" });
-var crossingToEnd1 = Traffic.Path.create({ start: crossing, end: end1, name: "crossingToEnd1" });
-var crossingToEnd2 = Traffic.Path.create({ start: crossing, end: end2, name: "crossingToEnd2" });
+var start = Traffic.StartNode.create({ x: 100, y: 0, frequency: 4, name: "Start" });
+var light = Traffic.ControlledNode.create({
+    x: 100, y: 200,
+    controller: controller,
+    stage: 0,
+    name: "Traffic light"
+});
+var end = Traffic.EndNode.create({ x: 100, y: 400, name: "End" });
+
+var startToLight = Traffic.Path.create({ start: start, end: light, name: "Start to Light" });
+var lightToEnd = Traffic.Path.create({ start: light, end: end, name: "Light to End" });
 
 $(function () {
-    Traffic.run($("canvas"), [
-        start1, start2
-    ]);
+    Traffic.verbose = true;
+    Traffic.run($("canvas"), [start], [controller]);
 });
 //*/
 

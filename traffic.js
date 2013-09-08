@@ -1,7 +1,7 @@
 
 var Traffic = {
     tick: 1000,
-    vehicleLengthInPixels: 10, // length of one vehicle as drawn on the canvas
+    vehicleLengthInPixels: 100, // length of one vehicle as drawn on the canvas
     name: null,
     phase: 0,
     verbose: false,
@@ -20,38 +20,52 @@ var Traffic = {
     }
 };
 
-Traffic.run = function (canvas, startNodes) {
-    var context = canvas[0].getContext("2d");
-
-    return window.setInterval(function () {
-    //return window.setTimeout(function () {
-        context.clearRect(0, 0, canvas.width(), canvas.height());
-        Traffic.render.nodeRendered = [];
-        $.each(startNodes, function () {
-            Traffic.render(canvas, this);
-            //if (Traffic.phase % this.frequency == 0) {
-            if (Math.random() > 1 / this.frequency) {
-                this.transferVehicle(Traffic.Vehicle.create({
-                    name: "from " + this.name
-                })); // increment start node
-            }
-        });
-        $.each(startNodes, function () {
-            this.reset();
-        });
-        Traffic.phase++;
-    }, Traffic.tick);
+Traffic.init = function (canvas, startNodes, controllers) {
+    this.canvas = canvas;
+    this.startNodes = startNodes;
+    this.controllers = controllers;
 };
 
-Traffic.render = function (canvas, node) {
-    var context = canvas[0].getContext("2d");
+Traffic.run = function (canvas, startNodes, controllers) {
+    var traffic = this;
+    this.init(canvas, startNodes, controllers);
+    return window.setInterval(function () {
+        traffic.step();
+    }, this.tick);
+};
+
+Traffic.step = function () {
+    var context = this.canvas[0].getContext("2d");
+    var traffic = this;
+    context.clearRect(0, 0, this.canvas.width(), this.canvas.height());
+    this.render.nodeRendered = [];
+    $.each(this.startNodes, function () {
+        traffic.render(this);
+        //if (traffic.phase % this.frequency == 0) {
+        if (Math.random() > 1 / this.frequency) {
+            this.transferVehicle(Traffic.Vehicle.create({
+                name: Math.round(Math.random() * 100)
+            })); // increment start node
+        }
+    });
+    $.each(this.startNodes, function () {
+        this.reset();
+    });
+    $.each(this.controllers, function () {
+        this.next(traffic.phase);
+    });
+    this.phase++;
+};
+
+Traffic.render = function (node) {
+    var context = this.canvas[0].getContext("2d");
     node.render(context);
     if (node.paths) {
         $.each(node.paths, function () {
             if (Traffic.render.nodeRendered.indexOf(this) == -1) {
                 Traffic.render.nodeRendered.push(this);
                 this.render(context);
-                Traffic.render(canvas, this.end);
+                Traffic.render(this.end);
                 if (this.vehicles.length > 0) {
                     var veh = this.vehicles[0];
                     if (veh.exitPhase <= Traffic.phase) {
@@ -90,6 +104,10 @@ Traffic.Node = Traffic.extend({
         canvas.arc(this.x + 10, this.y + 10, 5, 0, 360, false);
         canvas.fill();
         canvas.stroke();
+
+        canvas.fillStyle = "#000";
+        canvas.fillText(this.name, this.x + 20, this.y + 14);
+
     },
 
     addPath: function (path, priority) {
@@ -102,27 +120,32 @@ Traffic.Node = Traffic.extend({
 
     hasPath: function (path) {},
 
-    transferVehicle: function (veh, fromPath) { // transfer a vehicle to a path from this node
+    // transfer a vehicle to a path from this node
+    transferVehicle: function (veh, fromPath) {
         veh = veh || Traffic.Vehicle.create();
-        fromPath = fromPath || {};
         if (
             typeof this.paths == "undefined" || this.paths.length == 0 || // there are no onward paths (is a dead end)
             this.busy // (is busy with another vehicle)
         ) {
-            if (Traffic.verbose) console.log("Vehicle '" + veh.name + "' waiting at '" + this.name + "'");
+            if (Traffic.verbose) {
+                console.log("Vehicle '" + veh.name + "' waiting at '" + this.name + "'");
+            }
             this.busy = true;
-            fromPath.color = "#f00";
-            return this.transferBlocked(veh, fromPath);
+            if (fromPath) {
+                fromPath.blocked();
+            }
+            this.transferBlocked(veh, fromPath);
+            return false;
         } else {
             this.busy = true;
-            fromPath.color = "#00f";
+            if (fromPath) {
+                fromPath.unblocked();
+            }
             return this.transferAllowed(veh, fromPath);
         }
     },
 
-    transferBlocked: function (veh, fromPath) {
-        return false;
-    },
+    transferBlocked: function (veh, fromPath) {},
 
     transferAllowed: function (veh, fromPath) {
         var pathNum = Math.floor(Math.random() * this.paths.length);
@@ -179,7 +202,8 @@ Traffic.CrossingNode = Traffic.Node.extend({ // direct crossing from corrispondi
 Traffic.ControlledNode = Traffic.Node.extend({
     
     controlledNode: true,
-    green: 0, // which entry path has the green light
+    stage: 0,
+    green: true,
 
     create: function (props) {
         var G = this.extend(props);
@@ -192,13 +216,33 @@ Traffic.ControlledNode = Traffic.Node.extend({
         this.entryPaths.push(path);
     },
 
-    transferAllowed: function (veh, fromPath) {
-        if (this.entryPaths.indexOf(fromPath) == this.green) {
-            this.parent.parent.transferAllowed.call(this, veh, fromPath);
+    transferVehicle: function (veh, fromPath) {
+        if (this.controller) {
+            this.green = (this.controller.stage == this.stage);
+        }
+
+        if (this.green) {
+            fromPath.unblocked();
+            return this.transferAllowed(veh, fromPath);
         } else {
-            console.log("Vehicle '" + veh.name + "' stopped at red light at node '" + this.name + "'");
+            if (Traffic.verbose) {
+                console.log("Vehicle '" + veh.name + "' stopped at red light at node '" + this.name + "'");
+            }
+            fromPath.blocked();
+            this.transferBlocked(veh, fromPath);
             return false;
         }
+    },
+
+    render: function (canvas) {
+
+        if (this.green) {
+            this.color = "#0f0";
+        } else {
+            this.color = "#f00";
+        }
+        this.parent.parent.render.call(this, canvas);
+
     }
 });
 
@@ -221,6 +265,14 @@ Traffic.Path = Traffic.extend({
         return "Path: " + this.name;
     },
 
+    blocked: function () {
+        this.color = "#f00";
+    },
+
+    unblocked: function () {
+        this.color = "#00f";
+    },
+
     render: function (canvas) {
         canvas.beginPath();
         canvas.strokeStyle = this.color;
@@ -228,12 +280,11 @@ Traffic.Path = Traffic.extend({
         canvas.moveTo(this.start.x + 10, this.start.y + 10);
         canvas.lineTo(this.end.x + 10, this.end.y + 10);
         canvas.stroke();
-        /*
+
         var path = this;
-        $.each(this.vehicles, function () {
-            this.render(canvas, path);
+        $.each(this.vehicles, function (pos) {
+            this.render(canvas, path, pos);
         });
-        */
     },
 
     capacity: function () { // the maximum number of vehicle this path can hold
@@ -255,10 +306,16 @@ Traffic.Path = Traffic.extend({
         if (this.vehicles.length < this.capacity()) {
             veh.exitPhase = Traffic.phase + this.capacity();
             this.vehicles.push(veh);
+            if (Traffic.verbose) {
+                console.log("Vehicle '" + veh.name + "' entered path '" + this.name + "'");
+            }
             return true;
         } else if (this.capacity() == 0) { // short node, so push straight through to next path if possible
             return this.endNode.transferVehicle(veh, this);
         } else {
+            if (Traffic.verbose) {
+                console.log("Vehicle '" + veh.name + "' could not enter path '" + this.name + "'");
+            }
             return false;
         }
     },
@@ -279,23 +336,25 @@ Traffic.Vehicle = Traffic.extend({
     exitPhase: 0,
     color: "#333",
 
-    render: function (canvas, path) {
+    render: function (canvas, path, pos) {
 
-        var x = path.endNode.x - path.startNode.x;
-        var y = path.endNode.y - path.startNode.y;
+    }
 
-        var pos = (this.exitPhase - Traffic.phase + 1);
-        
-        x = path.startNode.x + (x / pos);
-        y = path.startNode.y + (y / pos);
+});
 
-        canvas.beginPath();
-        canvas.strokeStyle = this.color;
-        canvas.fillStyle = this.color;
-        canvas.lineWidth = 1;
-        canvas.arc(x, y, 10, 0, 360, false);
-        canvas.fill();
-        canvas.stroke();
+Traffic.Controller = Traffic.extend({
+
+    timing: 10,
+    stages: 2,
+    stage: 0,
+
+    create: function (props) {
+        var G = this.extend(props);
+        return G;
+    },
+
+    next: function (phase) {
+        this.stage = Math.floor(phase / this.timing) % this.stages;
     }
 
 });
